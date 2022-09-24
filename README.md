@@ -6,4 +6,5 @@ pyautogui
 pygame  
 Download the .py file and run via: python python.exe .\Zuiki_JRS_Journey_to_Kyoto.py   
   
-Currently only the lever is working.
+Currently only the lever is working.  
+# Make sure to disable Steam Input for the game, otherwise the controller will behave incorrectly.
