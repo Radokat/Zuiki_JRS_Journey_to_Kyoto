@@ -1,6 +1,9 @@
 import pyautogui  # install via pip install pyautogui
 import pygame  # install via pip install pygame
+import threading
+import queue
 
+pyautogui.PAUSE = 0.0571  # Lowest possible delay before the game starts dropping key presses.
 pygame.init()
 
 clock = pygame.time.Clock()
@@ -9,34 +12,92 @@ joystick_list = []
 joyid = "joyid"
 joyname = "joyname"
 
+q1 = queue.Queue()
+
+
+# Define functions
+
+
+def brake_inc():
+    pyautogui.keyDown('k')  # Increase brake
+    pyautogui.keyUp('k')
+
+
+def brake_dec():
+    pyautogui.keyDown('j')  # Decrease brake
+    pyautogui.keyUp('j')
+
+
+def brake_eb():
+    pyautogui.keyDown('l')  # Set brake to EB
+    pyautogui.keyUp('l')
+
+
+def neutral():
+    pyautogui.keyDown('s')  # Set master controller to off
+    pyautogui.keyUp('s')
+    pyautogui.keyDown('h')  # Release brakes
+    pyautogui.keyUp('h')
+
+
+def power_inc():
+    pyautogui.keyDown('x')  # Increase power
+    pyautogui.keyUp('x')
+
+
+def power_dec():
+    pyautogui.keyDown('d')  # Decrease power
+    pyautogui.keyUp('d')
+
+
+def power_max():
+    pyautogui.keyDown('z')  # Set power to max
+    pyautogui.keyUp('z')
+
+
 for i in range(pygame.joystick.get_count()):
     jid = {joyid: i, joyname: pygame.joystick.Joystick(i).get_name()}
     joystick_list.append(jid)
-mascon_select = next((i for i, item in enumerate(joystick_list) if item["joyname"] == "Nintendo Switch Pro Controller"), None)
-# for i in range(pygame.joystick.get_count()): print(i, pygame.joystick.Joystick(i).get_name())
+mascon_select = next((i for i, item in enumerate(joystick_list) if item["joyname"] == "Nintendo Switch Pro Controller"),
+                     None)
+
 if mascon_select is None:
     print("No Nintendo Switch Pro Controller found. Connect the correct controller and restart the script")
     exit()
+
 mascon_counter = 99
-pygame.event.clear()
+pygame.event.clear()  # Clear events to remove wrong inputs.
+
 print('#########################################################')
 print('Start the game and use the EB notch to sync controller.')
 print('Press CTRL + C to end the script.')
-print('#########################################################')   
+print('#########################################################')
+
+# Queue worker
+
+
+def worker():
+    while True:
+        item = q1.get()
+        item()
+        q1.task_done()
+
+
 try:
+    threading.Thread(target=worker, daemon=True).start()
+
     while 1:
-        pygame.event.pump()
         for event in pygame.event.get():
             mascon_axis = (joysticks[mascon_select].get_axis(1))
             mascon_axis = (round(mascon_axis, 2))
             # Disabled P5 and original P4 behaviour, as it's not needed.
             # if mascon_axis == 1.0:
-            #    print("P5")
+            #      # print("P5")
             #    pyautogui.keyDown('z')
             #    pyautogui.keyUp('z')
             #    mascon_counter = 0
             # if mascon_axis == 0.8:
-            #    print("P4")
+            #      # print("P4")
             #    if mascon_counter == 2:
             #        pyautogui.keyDown('x')  # Increase
             #        pyautogui.keyUp('x')
@@ -47,126 +108,95 @@ try:
             #        mascon_counter = 1
             if mascon_axis == 0.8:
                 print("P4")
-                pyautogui.keyDown('z')
-                pyautogui.keyUp('z')
+                q1.put(power_max)
                 mascon_counter = 1
             if mascon_axis == 0.62:
                 print("P3")
                 if mascon_counter == 3:
-                    pyautogui.keyDown('x')  # Increase
-                    pyautogui.keyUp('x')
+                    q1.put(power_inc)
                     mascon_counter = 2
                 if mascon_counter == 1:
-                    pyautogui.keyDown('d')  # Decrease
-                    pyautogui.keyUp('d')
+                    q1.put(power_dec)
                     mascon_counter = 2
             if mascon_axis == 0.44:
                 print("P2")
                 if mascon_counter == 4:
-                    pyautogui.keyDown('x')  # Increase
-                    pyautogui.keyUp('x')
+                    q1.put(power_inc)
                     mascon_counter = 3
                 if mascon_counter == 2:
-                    pyautogui.keyDown('d')  # Decrease
-                    pyautogui.keyUp('d')
+                    q1.put(power_dec)
                     mascon_counter = 3
             if mascon_axis == 0.25:
                 print("P1")
                 if mascon_counter == 5:
-                    pyautogui.keyDown('x')  # Increase
-                    pyautogui.keyUp('x')
+                    q1.put(power_inc)
                     mascon_counter = 4
                 if mascon_counter == 3:
-                    pyautogui.keyDown('d')  # Decrease
-                    pyautogui.keyUp('d')
+                    q1.put(power_dec)
                     mascon_counter = 4
             if mascon_axis == 0.0:
                 print("N")
-                pyautogui.keyDown('s')
-                pyautogui.keyUp('s')
-                pyautogui.keyDown('h')
-                pyautogui.keyUp('h')
+                q1.put(neutral)
                 mascon_counter = 5
             if mascon_axis == -0.21:
                 print("B1")
-                print(mascon_axis)
                 if mascon_counter == 5:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 6
                 if mascon_counter == 7:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 6
             if mascon_axis == -0.32:
                 print("B2")
-                print(mascon_axis)
                 if mascon_counter == 6:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 7
                 if mascon_counter == 8:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 7
             if mascon_axis == -0.43:
                 print("B3")
-                print(mascon_axis)
                 if mascon_counter == 7:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 8
                 if mascon_counter == 9:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 8
             if mascon_axis == -0.53:
                 print("B4")
-                print(mascon_axis)
                 if mascon_counter == 8:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 9
                 if mascon_counter == 10:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 9
             if mascon_axis == -0.64:
                 print("B5")
-                print(mascon_axis)
                 if mascon_counter == 9:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 10
                 if mascon_counter == 11:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 10
             if mascon_axis == -0.75:
                 print("B6")
-                print(mascon_axis)
                 if mascon_counter == 10:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 11
                 if mascon_counter == 12:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 11
             if mascon_axis == -0.85:
                 print("B7")
-                print(mascon_axis)
                 if mascon_counter == 11:
-                    pyautogui.keyDown('k')  # Increase
-                    pyautogui.keyUp('k')
+                    q1.put(brake_inc)
                     mascon_counter = 12
                 if mascon_counter >= 13:
-                    pyautogui.keyDown('j')  # Decrease
-                    pyautogui.keyUp('j')
+                    q1.put(brake_dec)
                     mascon_counter = 12
             # if mascon_axis == -0.96:
-            #    print("B8")
-            #    print(mascon_axis)
+            #      # print("B8")
+            #      #
             #    if mascon_counter == 12:
             #        # pyautogui.keyDown('k')  # Increase
             #        # pyautogui.keyUp('k')
@@ -177,12 +207,9 @@ try:
             #        mascon_counter = 13
             if mascon_axis == -1.00:
                 print("EB")
-                print(mascon_axis)
-                pyautogui.keyDown('l')
-                pyautogui.keyUp('l')
-                pyautogui.keyDown('l')
-                pyautogui.keyUp('l')
+                q1.put(brake_eb)
                 mascon_counter = 14
-        clock.tick(60)
+        pygame.time.Clock().tick_busy_loop(60)
 except KeyboardInterrupt:
     pass
+
