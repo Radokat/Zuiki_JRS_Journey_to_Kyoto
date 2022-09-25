@@ -9,7 +9,7 @@ Download the .py file and run via: python.exe .\Zuiki_JRS_Journey_to_Kyoto.py
 Alternatively you can now also download a executable release that was created with py2exe.  
   
 At the start you will need to select the line you want to drive, as the train on the Eizan line maps notches differently.  
-Once you are in the cabin, sync the controller up by putting it into the EB settin.  
+Once you are in the cabin, sync the controller up by putting it into the EB setting.  
   
 The inputs will be buffered, so there is a delay if you move many notches at once.  
 This is by design, as the game only accepts keyboard inputs separated by a pause.  
